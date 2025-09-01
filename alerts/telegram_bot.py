@@ -1,15 +1,39 @@
-import telebot
 import os
+import telebot
 
-TELEGRAM_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
-CHAT_ID = os.getenv("TELEGRAM_CHAT_ID")
-bot = telebot.TeleBot(TELEGRAM_TOKEN)
+TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN", "")
+TELEGRAM_CHAT_ID = os.getenv("TELEGRAM_CHAT_ID", "")
 
-def send_message(msg: str):
-    bot.send_message(CHAT_ID, msg)
+bot = None
+if TELEGRAM_BOT_TOKEN and ":" in TELEGRAM_BOT_TOKEN:
+    bot = telebot.TeleBot(TELEGRAM_BOT_TOKEN)
+else:
+    print("⚠️ Invalid TELEGRAM_BOT_TOKEN: Please set a valid token with a colon.")
 
-def send_signal(coin, gpt_signal, confidence):
-    msg = (f"⚡ {coin} Options Signal\n\n"
-           f"{gpt_signal}\n"
-           f"Confidence: {confidence}%")
-    bot.send_message(CHAT_ID, msg)
+
+def send_message(message: str):
+    """Send generic startup/info messages"""
+    if bot:
+        try:
+            if TELEGRAM_CHAT_ID:
+                bot.send_message(TELEGRAM_CHAT_ID, message)
+            else:
+                print("⚠️ TELEGRAM_CHAT_ID not set.")
+        except Exception as e:
+            print(f"⚠️ Failed to send message: {e}")
+    else:
+        print(message)
+
+
+def send_alert(message: str):
+    """Send trading signal alerts"""
+    if bot:
+        try:
+            if TELEGRAM_CHAT_ID:
+                bot.send_message(TELEGRAM_CHAT_ID, message)
+            else:
+                print("⚠️ TELEGRAM_CHAT_ID not set.")
+        except Exception as e:
+            print(f"⚠️ Failed to send alert: {e}")
+    else:
+        print(message)
