@@ -15,10 +15,19 @@ if __name__ == "__main__":
     while True:
         for coin in COINS:
             try:
-                # fetch data safely
+                # fetch index price data safely
                 data = fetch_data(coin)
                 if not data:
                     print(f"⚠️ Skipping {coin}: no data")
+                    continue
+
+                # safely extract price from deribit_api.py
+                price = None
+                if isinstance(data, dict) and "price" in data:
+                    price = data["price"]
+
+                if not price:
+                    print(f"⚠️ No price found for {coin}, skipping")
                     continue
 
                 # analysis
@@ -33,21 +42,6 @@ if __name__ == "__main__":
                 if confidence >= 65:
                     # AI trade decision
                     gpt_signal = gpt_trade_decision(coin, data, oi, sentiment, pattern)
-
-                    # Safely extract price from data
-                    price = None
-                    if isinstance(data, dict) and "close" in data:
-                        price = data["close"][-1]
-                    elif isinstance(data, list):
-                        # try Deribit instruments list
-                        if "last_price" in data[0]:
-                            price = data[0]["last_price"]
-                        elif "tick_size" in data[0]:
-                            price = data[0]["tick_size"]
-
-                    if not price:
-                        print(f"⚠️ No price found for {coin}, skipping")
-                        continue
 
                     # Decide direction
                     direction = "LONG" if "BUY" in gpt_signal.upper() else "SHORT"
@@ -64,3 +58,4 @@ if __name__ == "__main__":
                 print(f"❌ Error with {coin}: {e}")
 
         time.sleep(SCAN_INTERVAL)
+
