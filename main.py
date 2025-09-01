@@ -1,7 +1,7 @@
 import time
 from config import COINS, SCAN_INTERVAL
 from alerts.telegram_bot import send_message, send_alert
-from data_sources.deribit_api import fetch_data
+from data_sources.deribit_api import fetch_data, fetch_candles
 from analysis.technicals import calc_indicators
 from analysis.options_oi import analyze_oi
 from analysis.candlesticks import summarize_candles
@@ -15,25 +15,23 @@ if __name__ == "__main__":
     while True:
         for coin in COINS:
             try:
-                # fetch index price data safely
+                # fetch index price
                 data = fetch_data(coin)
                 if not data:
-                    print(f"⚠️ Skipping {coin}: no data")
+                    print(f"⚠️ Skipping {coin}: no index price")
                     continue
+                price = data["price"]
 
-                # safely extract price from deribit_api.py
-                price = None
-                if isinstance(data, dict) and "price" in data:
-                    price = data["price"]
-
-                if not price:
-                    print(f"⚠️ No price found for {coin}, skipping")
+                # fetch candle data
+                candles = fetch_candles(coin, resolution="5")  # 5-minute candles
+                if not candles:
+                    print(f"⚠️ Skipping {coin}: no candles")
                     continue
 
                 # analysis
-                ta = calc_indicators(data)
+                ta = calc_indicators(candles)
                 oi = analyze_oi(coin)
-                pattern = summarize_candles(data)
+                pattern = summarize_candles(candles)
                 sentiment = get_sentiment(coin)
 
                 # confidence calculation
@@ -41,7 +39,7 @@ if __name__ == "__main__":
 
                 if confidence >= 65:
                     # AI trade decision
-                    gpt_signal = gpt_trade_decision(coin, data, oi, sentiment, pattern)
+                    gpt_signal = gpt_trade_decision(coin, candles, oi, sentiment, pattern)
 
                     # Decide direction
                     direction = "LONG" if "BUY" in gpt_signal.upper() else "SHORT"
@@ -58,4 +56,3 @@ if __name__ == "__main__":
                 print(f"❌ Error with {coin}: {e}")
 
         time.sleep(SCAN_INTERVAL)
-
