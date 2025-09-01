@@ -34,14 +34,19 @@ if __name__ == "__main__":
                     # AI trade decision
                     gpt_signal = gpt_trade_decision(coin, data, oi, sentiment, pattern)
 
-                    # Safely extract price
+                    # Safely extract price from data
                     price = None
                     if isinstance(data, dict) and "close" in data:
                         price = data["close"][-1]
-                    elif isinstance(data, list) and "last_price" in data[0]:
-                        price = data[0]["last_price"]
-                    else:
-                        print(f"⚠️ No close price found for {coin}, skipping")
+                    elif isinstance(data, list):
+                        # try Deribit instruments list
+                        if "last_price" in data[0]:
+                            price = data[0]["last_price"]
+                        elif "tick_size" in data[0]:
+                            price = data[0]["tick_size"]
+
+                    if not price:
+                        print(f"⚠️ No price found for {coin}, skipping")
                         continue
 
                     # Decide direction
